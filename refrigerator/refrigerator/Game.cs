@@ -1,8 +1,10 @@
 ﻿/*Handled by code*/
 #pragma warning disable CS8600,CS8602 ,CS8603,CS8604
+using Microsoft.VisualBasic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,18 +24,29 @@ namespace refrigerator
         public Game() {
             MyRefrigList = new List<Refrigerator>();
             actions = new Dictionary<int, Action>
-        {
-            { 1, OneWasPressed },
-            { 2, TwoWasPressed },
-            { 3, ThreeWasPressed },
-            { 4, FourWasPressed },
-            { 5, FiveWasPressed },
-            { 6, SixWasPressed },
-            { 7, SevenWasPressed },
-            { 8, EightWasPressed },
-            { 9, NineWasPressed },
-            { 10, TenWasPressed },
+            {
+            { 1, PrintRefrigeratorItemsAndContents },
+            { 2, PrinFreeSpaceInTheRefrigerator },
+            { 3, InsertAnItem },
+            { 4, RemoveAnItem },
+            { 5, CleaningTheRefrigeratorAndPrintingCheckedItems },
+            { 6, WhatWouldYouLikeToEat },
+            { 7, SortByExpirationDate },
+            { 8, SortingShelvesAccordingAvailableSpace },
+            { 9, SortRefrigeratorAccordingAvailableSpace },
+            { 10, PreparationForShopping },
         };
+        }
+        public int? GetKeyByActionName(string actionName)
+        {
+            foreach (var pair in actions)
+            {
+                if (pair.Value.Method.Name == actionName)
+                {
+                    return pair.Key;
+                }
+            }
+            return null;  
         }
         public void HandleChoice(int choice)
         {
@@ -50,68 +63,36 @@ namespace refrigerator
                 Console.WriteLine("Invalid choice");
             }
         }
-        private Refrigerator GetRefrigeratorById()
+        public void PrintRefrigeratorItemsAndContents()
         {
-            if (MyRefrigList.Count == 0)
-            {
-                Console.WriteLine("No refrigerators have been created yet. Would you like to create? Press yes or no.");
-                string answer = Console.ReadLine();
-                switch (answer)
-                {
-                    case "yes":
-                        AddRefrigerator();
-                        return MyRefrigList[0];
-                    case "no":
-                        return null;
-                    default:
-                        Console.WriteLine("Sorry your answer is invalid");
-                        return null;
-                }
-            }
-            int id;
-            Console.WriteLine("Enter Refrigerator ID - Number between 1 to {0}", MyRefrigList.Count);
-            while(!int.TryParse(Console.ReadLine(),out id))
-            {
-                Console.WriteLine("Enter valid ID");
-            }
-            var refrigerator = MyRefrigList.FirstOrDefault(r => r.RefrigeratorId == id);
-            if (refrigerator == null)
-            {
-                Console.WriteLine("No refrigerator was found with the ID you entered");
-            }
-            return refrigerator;
-        }
-
-        public void OneWasPressed()
-        {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
                 Console.WriteLine(refrigerator.ToString());
             }
         }
 
-        public void TwoWasPressed()
+        public void PrinFreeSpaceInTheRefrigerator()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
                 Console.WriteLine(refrigerator.CalculationOfFreeSpaceInTheRefrigerator());
             }
         }
-        public void ThreeWasPressed()
+        public void InsertAnItem()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
                 Console.WriteLine("What would you like to put in the fridge?");
-                var product=CreateProduct();
+                var product=User.TapProductDetails();
                 refrigerator.PuttingProductInRefrigerator(product);
             }
         }
-        public void FourWasPressed()
+        public void RemoveAnItem()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             Product? product;
             if (refrigerator != null)
             {
@@ -124,59 +105,30 @@ namespace refrigerator
                 }  
             }
         }
-        public void FiveWasPressed()
+        public void CleaningTheRefrigeratorAndPrintingCheckedItems()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
                 refrigerator.CleaningRefrigerator();
             }
         }
-        public void SixWasPressed()
+        public void WhatWouldYouLikeToEat()
         {
             var listIWant = new List<Product>();
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
                 Console.WriteLine("What do you want to eat?");
-                ProductType type;
-                do
-                {
-                    Console.Write("Enter product type (");
-                    foreach (var item in Enum.GetNames(typeof(ProductType)))
-                    {
-                        Console.Write(item + " ");
-                    }
-                    Console.WriteLine("):");
-                } while (!Enum.TryParse<ProductType>(Console.ReadLine(), out type));
-                Kashrut kashrutType;
-                do
-                {
-                    Console.Write("Enter Kashrut (");
-                    foreach (var item in Enum.GetNames(typeof(Kashrut)))
-                    {
-                        Console.Write(item + " ");
-                    }
-                    Console.WriteLine("):");
-                } while (!Enum.TryParse<Kashrut>(Console.ReadLine(), out kashrutType));
+                ProductType type=User.TapType();
+                Kashrut kashrutType=User.TapKashrut();
                 listIWant= refrigerator.WhatDoIWantToEat(kashrutType.ToString(),type.ToString());
-                if(listIWant.Count > 0)
-                {
-                    Console.WriteLine("The products according to the filter you applied:");
-                    foreach (var product in listIWant)
-                    {
-                        Console.WriteLine(product.ToString());
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Sorry, but no products were found according to the filter you selected");
-                }
+                User.PrintProductIMayWant(listIWant);
             }
         }
-        public void SevenWasPressed()
+        public void SortByExpirationDate()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
               var products= refrigerator.SortProductsByExpirationDate();
@@ -192,9 +144,9 @@ namespace refrigerator
                     Console.WriteLine("This fridge is empty");
             }
         }
-        public void EightWasPressed()
+        public void SortingShelvesAccordingAvailableSpace()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             {
                 Console.WriteLine("All the shelves are arranged according to the free space left on them:");
@@ -205,12 +157,13 @@ namespace refrigerator
                 }
             }
         }
-        public void NineWasPressed()
+        public void SortRefrigeratorAccordingAvailableSpace()
         {
             if (MyRefrigList.Count > 1)
             {
                 Console.WriteLine("All the refrigerators are arranged according to the free space left in them:");
-                foreach (var frig in MyRefrigList)
+                var fridgs = MyRefrigList[0].SortRefrigeratorsByFreeSpace(MyRefrigList);
+                foreach (var frig in fridgs)
                 {
                     Console.WriteLine("Refrigerator id: {0} -> free space: {1}", frig.RefrigeratorId , frig.CalculationOfFreeSpaceInTheRefrigerator());
                 }
@@ -223,7 +176,7 @@ namespace refrigerator
                 {
                     case "yes":
                         AddRefrigerator();
-                        NineWasPressed();
+                        SortRefrigeratorAccordingAvailableSpace();
                         break;
                     case "no":
                         break;
@@ -233,9 +186,9 @@ namespace refrigerator
                 }
             }
         }
-        public void TenWasPressed()
+        public void PreparationForShopping()
         {
-            var refrigerator = GetRefrigeratorById();
+            var refrigerator = User.ChooseRefrigerator(this);
             if (refrigerator != null)
             { 
                 refrigerator.GettingReadytoShoping();
@@ -243,48 +196,8 @@ namespace refrigerator
         }
         public void AddRefrigerator()
         {
-            Console.WriteLine("Enter refrigerator details:");
-            Console.WriteLine("model?");
-            string model = Console.ReadLine();
-            Console.WriteLine("Color?");
-            string color = Console.ReadLine();
-            Refrigerator newRef = new Refrigerator(model, color);
+            Refrigerator newRef = User.TapRefDetails();
             MyRefrigList.Add(newRef);
-        }
-        private Product CreateProduct()
-        {
-            Console.WriteLine("Enter product details:");
-            Console.Write("Product Name: ");
-            string productName = Console.ReadLine();
-            ProductType type;
-            do
-            {
-                Console.Write("Enter product type (");
-                foreach (var item in Enum.GetNames(typeof(ProductType)))
-                {
-                    Console.Write(item + " ");
-                }
-                Console.WriteLine("):");
-            } while (!Enum.TryParse<ProductType>(Console.ReadLine(), out type));
-            Kashrut kashrutType;
-            do
-            {
-                Console.Write("Enter Kashrut (");
-                foreach (var item in Enum.GetNames(typeof(Kashrut)))
-                {
-                    Console.Write(item + " ");
-                }
-                Console.WriteLine("):");
-            } while (!Enum.TryParse<Kashrut>(Console.ReadLine(), out kashrutType));
-            DateTime expiryDate;
-            do
-            {
-                Console.Write("Enter Expiry Date (format: YYYY-MM-DD): ");
-            } while (!DateTime.TryParse(Console.ReadLine(), out expiryDate));
-            Console.Write("Enter Size in Scm (default is 5): ");
-            string sizeInput = Console.ReadLine();
-            double sizeInScm = string.IsNullOrEmpty(sizeInput) ? 5 : double.Parse(sizeInput);
-            return new Product(productName, type, kashrutType, expiryDate, sizeInScm);
         }
     }
 }
